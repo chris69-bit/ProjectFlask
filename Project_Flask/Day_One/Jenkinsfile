@@ -1,0 +1,59 @@
+pipeline{
+    agent any
+
+    environment{
+        DOCKER_BUILD='chrispined/pythonApp:py-app-${BUILD_ID}'
+        KUBECONFIG_CREDENTIALS = credentials('kubeconfig-cred')
+    }
+    stages{
+        stage("Checkout Scm"){
+            steps{
+                git branch: "main", url: ""
+            }
+        }
+
+        stage("Build"){
+            steps{
+                echo 'Building the application'
+                sh 'pip install -r requirements.txt'
+                sh 'pytest'
+            }
+        }
+
+        stage("Build docker image"){
+            steps{
+                sh 'docker build -t ${DOCKER_BUILD} .'
+
+            }
+        }
+
+        stage("Push image to DOcker"){
+            steps{
+                sh 'docker push ${DOCKER_BUILD}'
+            }
+        }
+
+        stage("Deploy to K8s"){
+            stage{
+                script {
+                    echo "Deploying to kubernetes"
+                    withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]){
+                        sh 'helm upgrade --install flask-app ./flask-app-deploy --set image.repository=${DOCKER_BUILD} --kubeconfig $KUBECONFIG'
+                    }
+                }
+            }
+        }
+
+    }
+    post{
+        always{
+            echo "========always========"
+        }
+        success{
+            echo "========pipeline executed successfully ========"
+        }
+        failure{
+            echo "========pipeline execution failed========"
+        }
+    }
+}
