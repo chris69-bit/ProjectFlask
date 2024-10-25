@@ -1,0 +1,18 @@
+# alert-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: alert-rules
+  namespace: monitoring
+spec:
+  groups:
+    - name: example-alert
+      rules:
+        - alert: HighPodMemoryUsage
+          expr: sum(container_memory_usage_bytes{namespace="default", pod=~"myapp.*"}) > (500 * 1024 * 1024)
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage on pod {{ $labels.pod }}"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is using high memory."
