@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: DeamonSet
+metadata:
+  name: fluentd-deployment
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: fluentd 
+  template:
+    metadata:
+      labels: 
+        app: fluentd
+    spec:
+      containers:
+        - name: fluentd
+          image: fluent/fluentd:v1.11.2
+          env:
+            - name: ELASTICSEARCH_HOST
+              value: "elasticsearch.logging.svc.cluster.local"
+            - name: ELASTICSEARCH_HOST
+              value: 9200
