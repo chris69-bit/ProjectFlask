@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role 
+metadata:
+  namespace: default
+  name: secret-reader
+rules: 
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get","lists"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: default
+  name: read-secret
+subjects:
+  - kind: User
+    name: flask-app-service
+    apiGroup: ""
+roleRef:
+  kind: Role 
+  name: secret-reader 
+  apiGroup: ""

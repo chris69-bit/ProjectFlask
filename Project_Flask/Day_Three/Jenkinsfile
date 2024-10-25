@@ -1,0 +1,69 @@
+pipeline{
+    agent any
+
+    environment{
+        DOCKER_IMAGE=chrispined/pythonApp:python-app-${BUILD_ID}
+        DB_USER = credentials('db-username')    // Jenkins credential ID for db user
+        DB_PASS = credentials('db-password')    // Jenkins credential ID for db password
+    }
+    stages{
+        stage("Checkout SCM"){
+            steps{
+                git branch: "main", url: ""
+            }
+        }
+
+        stage("Install dependendencies"){
+            steps{
+                sh 'pip install -r requirements.txt'
+            }
+        }
+
+        stage("Test app"){
+            steps{
+                sh 'pytest'
+            }
+        }
+
+        stage("Build the image"){
+            steps{
+                sh 'docker build -t ${DOCKER_IMAGE} .'
+            }
+        }
+
+        stage("Push Image"){
+            steps{
+                sh 'docker push ${DOCKER_IMAGE}'
+            }
+        }
+
+        stage("Deploy to K8s"){
+            steps{
+                sh 'kubectl apply -f flask-deployment.yaml'
+            }
+        }
+
+        stage("Monitoring"){
+            steps{
+                  sh """
+                        helm upgrade --install flask-app ./flask-app-deploy \
+                        --set db.username=${DB_USER} \
+                        --set db.password=${DB_PASS}
+                    """
+                    
+                }
+            
+        }
+    }
+    post{
+        always{
+            echo "========always========"
+        }
+        success{
+            echo "========pipeline executed successfully ========"
+        }
+        failure{
+            echo "========pipeline execution failed========"
+        }
+    }
+}
