@@ -1,0 +1,1 @@
+This commit is a simple demonstartion of definig network policies. Where a simple front end deployment and backend are defined and all traffic are restricted to the backend with only exception being that of frontend

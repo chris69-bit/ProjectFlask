@@ -1,0 +1,14 @@
+apiVersion: networking.K8s.io/v1
+kind: NetworkPolicy
+metadata:
+  namespace: backend
+  name: allow-front-to-back
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress 
+  ingress:
+  - from:
+      - namespaceSelector:
+          matchLabels:
+            role: frontend
