@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap 
+metadata:
+  name: app-config
+  namespace: production
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "error" 
+  DATABASE_URL: "postgres://prod_user:prod_password@prod-db:5432/prod_db"

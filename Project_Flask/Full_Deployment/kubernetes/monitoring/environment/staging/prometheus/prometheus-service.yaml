@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service 
+metadata:
+  name: prometheus-service
+  namespace: monitoring
+spec:
+  selector:
+    app: prometheus
+
+    type: ClusterIp
+  ports:
+    - port: 9000
+      targetPort: 9000

@@ -1,0 +1,10 @@
+spec:
+  replicas: 10
+  template:
+    spec:
+      containers:
+      - name: flask-app
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"

@@ -1,0 +1,90 @@
+pipeline
+    agent any
+    environment{
+        DOCKER_REGISTRY='chrispined/pythonApp'
+        K8S_NAMESPACE='${params.ENV}'
+        KUBE_CONFIG_CRED= credentials('k8s-config-cred')
+    }
+
+    parameters{
+        choice(name: 'ENV', choices['staging','production'], description: 'Select the deployment environment')
+        string(name: 'params.DOCKER_TAG', defaultValue: 'latest', description: 'Specify the image tag')
+    }
+    stages{
+        stage("Checkout SCM"){
+            steps{
+                git branch: "main", url: ""
+            }
+        }
+
+        stage("Install dependencies"){
+            steps{
+                sh 'pip install -r requirements.txt'
+            }
+        }
+
+        stage("Run Test"){
+            parallel{
+                stage('Unit Test'){
+                    steps{
+                        sh 'pytest tests/unit'
+                    }
+                }
+
+                stage('Integration Test'){
+                    steps{
+                        sh 'pytest tests/integration'
+                    } kubectl --kubeconfig=$KUBECONFIG set image deployment/flaskapp flaskapp=${DOCKER_REGISTRY}:${DOCKER_TAG} -n ${K8S_NAMESPACE}
+                        kubectl --kubeconfig=$KUBECONFIG rollout status deployment/flaskapp -n ${K8S_NAMESPAC
+                }
+            }
+        }
+
+        stage("SonarQube Analysis"){
+            steps{
+                script {
+                    withSonarQubeEnv('SonarQube'){
+                        sh 'sonar-scanner -Dsonar.projectKey=flaskapp -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_AUTH_TOKEN'
+                    }
+                }
+            }
+        }
+
+        stage('Build Image'){
+            steps{
+                sh 'docker build -t ${params.DOCKER_TAG} .'
+            }
+        }
+
+        stage('Push Image'){
+            steps{
+                sh 'docker tag ${params.DOCKER_TAG} ${DOCKER_REGISTRY}:${params.DOCKER_TAG}'
+                sh 'docker push ...'
+            }
+        }
+
+        stage('Deploy to K8s'){
+            steps{
+                echo 'Deploying to kubernetes ${params.ENV} environment'
+                withCredentials([file(credentialsId: 'k8s-config-cred', variable: KUBECONFIG)]){
+
+                sh '''
+                kubectl --kubeconfig=$KUBECONFIG set image deployment/flaskapp-deployment flaskapp=${DOCKER_REGISTRY}:${DOCKER_TAG} -n ${K8S_NAMESPACE}
+                kubectl --kubeconfig=$KUBECONFIG rollout status deployment/flaskapp-deployment -n ${K8S_NAMESPACE}
+                '''}
+            }
+        }
+    }
+    post{
+        always{
+            echo 'Cleaning workingspace'
+            deleteDir()
+        }
+        success{
+            echo "========pipeline executed successfully ========"
+        }
+        failure{
+            echo "========pipeline execution failed========"
+        }
+    }
+}
