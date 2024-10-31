@@ -34,8 +34,7 @@ pipeline
                 stage('Integration Test'){
                     steps{
                         sh 'pytest tests/integration'
-                    } kubectl --kubeconfig=$KUBECONFIG set image deployment/flaskapp flaskapp=${DOCKER_REGISTRY}:${DOCKER_TAG} -n ${K8S_NAMESPACE}
-                        kubectl --kubeconfig=$KUBECONFIG rollout status deployment/flaskapp -n ${K8S_NAMESPAC
+                    }
                 }
             }
         }
